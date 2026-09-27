@@ -5,8 +5,8 @@ Notizen mit Titel, Text und Tags. Die Einträge bleiben in diesem Browser gespei
 ## Projekt starten
 
 ```sh
-git clone https://github.com/ct26m042/ue2.git
-cd ue2
+git clone https://github.com/ct26m042/Solo-Assignment-2.git
+cd Solo-Assignment-2
 npm install
 npm run dev
 ```
