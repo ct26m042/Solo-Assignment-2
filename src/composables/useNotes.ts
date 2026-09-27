@@ -21,23 +21,38 @@ export function useNotes() {
     notes.value = notes.value.filter((note) => note.id !== id)
   }
 
-  function filteredNotes(term: Ref<string> | string): ComputedRef<Note[]> {
+  const availableTags = computed(() => {
+    const seen = new Map<string, string>()
+    for (const note of notes.value) {
+      for (const tag of note.tags ?? []) {
+        const trimmed = tag.trim()
+        const key = trimmed.toLowerCase()
+        if (trimmed && !seen.has(key)) {
+          seen.set(key, trimmed)
+        }
+      }
+    }
+    return [...seen.values()].sort((a, b) => a.localeCompare(b, 'de'))
+  })
+
+  function filteredNotes(term: Ref<string> | string, tag: Ref<string> | string = ''): ComputedRef<Note[]> {
     return computed(() => {
       const query = String(unref(term) ?? '').trim().toLowerCase()
-      if (!query) {
-        return notes.value
-      }
+      const activeTag = String(unref(tag) ?? '').trim().toLowerCase()
 
       return notes.value.filter((note) => {
         const title = String(note.title ?? '').toLowerCase()
         const content = String(note.content ?? '').toLowerCase()
         const tags = Array.isArray(note.tags) ? note.tags : []
-        return title.includes(query)
+        const matchesQuery = !query
+          || title.includes(query)
           || content.includes(query)
-          || tags.some((tag) => String(tag).toLowerCase().includes(query))
+          || tags.some((item) => String(item).toLowerCase().includes(query))
+        const matchesTag = !activeTag || tags.some((item) => String(item).toLowerCase() === activeTag)
+        return matchesQuery && matchesTag
       })
     })
   }
 
-  return { notes, addNote, deleteNote, filteredNotes }
+  return { notes, availableTags, addNote, deleteNote, filteredNotes }
 }

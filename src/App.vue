@@ -1,17 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import BaseCard from './components/BaseCard.vue'
 import SearchBar from './components/SearchBar.vue'
 import { useNotes } from './composables/useNotes'
 
-const { addNote, deleteNote, filteredNotes } = useNotes()
+const { notes, availableTags, addNote, deleteNote, filteredNotes } = useNotes()
 
 const search = ref('')
+const selectedTag = ref('')
 const title = ref('')
 const content = ref('')
 const tagsInput = ref('')
 
-const visibleNotes = filteredNotes(search)
+const visibleNotes = filteredNotes(search, selectedTag)
+
+watch(availableTags, (tags) => {
+  const active = selectedTag.value.toLowerCase()
+  if (active && !tags.some((tag) => tag.toLowerCase() === active)) {
+    selectedTag.value = ''
+  }
+})
+
+function toggleTag(tag: string): void {
+  selectedTag.value = selectedTag.value.toLowerCase() === tag.toLowerCase() ? '' : tag
+}
+
+function isTagActive(tag: string): boolean {
+  return selectedTag.value.toLowerCase() === tag.toLowerCase()
+}
 
 function submitNote(): void {
   const trimmedTitle = title.value.trim()
@@ -64,8 +80,25 @@ function removeNote(id: number): void {
 
     <SearchBar v-model="search" />
 
+    <div v-if="notes.length" class="filters" role="group" aria-label="Nach Tag filtern">
+      <span>Filter</span>
+      <button type="button" :class="{ active: !selectedTag }" :aria-pressed="!selectedTag" @click="selectedTag = ''">
+        Alle
+      </button>
+      <button
+        v-for="tag in availableTags"
+        :key="tag"
+        type="button"
+        :class="{ active: isTagActive(tag) }"
+        :aria-pressed="isTagActive(tag)"
+        @click="toggleTag(tag)"
+      >
+        {{ tag }}
+      </button>
+    </div>
+
     <p v-if="visibleNotes.length === 0" class="empty">
-      {{ search.trim() ? 'Keine Notizen zu dieser Suche.' : 'Noch keine Notizen.' }}
+      {{ notes.length ? 'Keine Notizen für diese Filter.' : 'Noch keine Notizen.' }}
     </p>
 
     <section v-else class="notes">
@@ -76,7 +109,9 @@ function removeNote(id: number): void {
         </template>
         <p class="content">{{ note.content }}</p>
         <ul v-if="note.tags.length" class="tags">
-          <li v-for="tag in note.tags" :key="tag">{{ tag }}</li>
+          <li v-for="tag in note.tags" :key="tag">
+            <button type="button" :class="{ active: isTagActive(tag) }" @click="toggleTag(tag)">{{ tag }}</button>
+          </li>
         </ul>
       </BaseCard>
     </section>
@@ -152,11 +187,37 @@ button {
   list-style: none;
 }
 
-.tags li {
-  padding: 2px 8px;
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters > span {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.filters button,
+.tags button {
+  padding: 4px 10px;
+  border: 1px solid #d6d0c6;
   border-radius: 999px;
-  background: #efe8dc;
+  background: #fff;
+  color: #1c1917;
   font-size: 0.85rem;
+}
+
+.filters button.active,
+.tags button.active {
+  background: #1c1917;
+  border-color: #1c1917;
+  color: #fffdf8;
+}
+
+.tags li {
+  list-style: none;
 }
 
 .delete {
